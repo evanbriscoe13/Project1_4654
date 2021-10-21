@@ -1,0 +1,63 @@
+---
+title: "Lauren_bradley_proj1"
+author: "Lauren Bradley"
+date: "10/21/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+# Your function will have the following inputs.
+# 
+# * x - a numeric input vector
+# * y - a numeric response
+#
+# Note span and degree are shown with their default values. (Read about this in the description)
+# * degree should be 1 or 2 only
+# * span can be any value in interval (0, 1) non-inclusive.
+#
+# If show.plot = TRUE then you must show a plot of either the final fit
+myloess <- function(x, y, span = 0.5, degree = 1, show.plot = TRUE){
+  
+  # Your code goes here
+  
+  return c(span, degree, Win_total, n_points)
+}
+# Your function should return a named list containing the following:
+# span: proportion of data used in each window (controls the bandwidth)
+# degree: degree of polynomial
+# N_total: total number of points in the data set
+# Win_total: total number of windows
+# n_points: number of points in each window in a vector
+# SSE: Error Sum of Squares (Tells us how good of a fit we had).
+# loessplot: An object containing the ggplot so that we can see the plot later. 
+#  We want this even if show.plot = FALSE
+#  Note: you are NOT allowed to simply use stat_smooth() or geom_smooth() to have it automatically do LOESS.
+#  You should use geom_line() or similar to plot your final the LOESS curve.
+
+# Make sure you can access the objects properly using the $ notation.
+```
+
+
+```{r}
+library(ggplot2)
+load("ozone.RData")
+data("ozone")
+
+ggplot(ozone, aes(x = temperature, y = ozone)) + theme_bw() + geom_point()
+```
+
+```{r}
+poly1 <- lm(ozone ~ temperature, data = ozone)
+predicted_df <- data.frame(mpg_pred = predict(poly1, ozone), temp=ozone$)
+
+ggplot(ozone, aes(x = temperature, y = ozone)) + theme_bw() + geom_point()
+  + geom_line(color='red', data = ozone, aes(x= poly1))
+
+```
+
+
+
