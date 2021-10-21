@@ -21,9 +21,42 @@ knitr::opts_chunk$set(echo = TRUE)
 #
 # If show.plot = TRUE then you must show a plot of either the final fit
 myloess <- function(x, y, span = 0.5, degree = 1, show.plot = TRUE){
-  
+  #
   # Your code goes here
-  
+  #n_points
+  n_points <- ceiling(length(y)/span)
+  #Our fitted values vector
+  y.fitted <- double(length = length(y))
+  # Degree 2
+  if(degree == 2){
+    for (val in x){
+      loc_dat <- create_subset(val, x, n_point)
+      distances <- abs(loc_dat-val)
+      max.dist <- max(distances)
+      scale_dists <- distances/max.dist
+      wts <- triwts(scale_dists)
+      fit <- lm(y~ x + x**2, weights = wts)
+      reg.value <- fit$coefficients[1] + fit$coefficients[2]*val +fit$coefficients[3]*val**2
+      y.fitted <- append(y.fitted, reg.value)
+    }
+    
+  }
+  # Degree 1
+  else{
+    #Go through each point
+    for (val in x){
+      loc_dat <- create_subset(val, x, n_point)
+      distances <- abs(loc_dat-val)
+      max.dist <- max(distances)
+      scale_dists <- distances/max.dist
+      wts <- triwts(scale_dists)
+      fit <- lm(y~ x, weights = wts)
+      reg.value <- fit$coefficients[1] + fit$coefficients[2]*val
+      y.fitted <- append(y.fitted, reg.value)
+    }
+    
+  }
+    
   return c(span, degree, Win_total, n_points)
 }
 # Your function should return a named list containing the following:
@@ -39,6 +72,32 @@ myloess <- function(x, y, span = 0.5, degree = 1, show.plot = TRUE){
 #  You should use geom_line() or similar to plot your final the LOESS curve.
 
 # Make sure you can access the objects properly using the $ notation.
+```
+
+```{r local_subset}
+create_subset <- function(obs, vector, k){
+  return(vector[order(abs(obs-vector))][seq_len(k)])
+}
+x <- c(1,2,3,4,5,6,7,8,9)
+create_subset(9,x,3)
+
+```
+```{r weight function}
+triwts <- function(distances){
+  #allocate weights vector
+  wts <- double(length = length(distances))
+  
+  for (i in 1:length(distances)){
+    if (abs(distances[i]) <= 1){
+      wts[i] <- (1-abs(distances[i])**3)**3
+    }
+    else
+      wts[i] <- 0
+  }
+  return (wts)
+}
+dist <- c(0.7866237, 0.3744029, 0.168412, 0.0000000, 0.6660479, 0.7498743, 1.0000000)
+triwts(dist)
 ```
 
 
