@@ -26,7 +26,7 @@ myloess <- function(x, y, span = 0.5, degree = 1, show.plot = TRUE){
   #N_total
   N_total <- length(x)
   #n_points
-  n_points <- ceiling(length(y)/span)
+  n_points <- ceiling(length(y)*span)
   #Our fitted values vector
   y.fitted <- double(length = length(y))
   #past local subset
@@ -37,7 +37,7 @@ myloess <- function(x, y, span = 0.5, degree = 1, show.plot = TRUE){
   if(degree == 2){
     for (val in x){
       #Create current local subset vector
-      loc_dat <- create_subset(val, x, n_point)
+      loc_dat <- create_subset(val, x, n_points)
       #Compare to previous local subset
       # If previous local dataset is not equal to current
       if(!setequal(loc_dat, past_loc_dat)){
@@ -67,7 +67,7 @@ myloess <- function(x, y, span = 0.5, degree = 1, show.plot = TRUE){
     for (val in x){
       
       #Create current local subset vector
-      loc_dat <- create_subset(val, x, n_point)
+      loc_dat <- create_subset(val, x, n_points)
       #Compare to previous local subset
       # If previous local dataset is not equal to current
       if(!setequal(loc_dat, past_loc_dat)){
@@ -90,6 +90,9 @@ myloess <- function(x, y, span = 0.5, degree = 1, show.plot = TRUE){
     }
     SSE <- (y-y.fitted)**2
   }
+  
+  loessplot <- ggplot(aes(x = x, y = y)) + theme_bw() + geom_point() + 
+              geom_line(color='red', aes(x= x, y=y.fitted))
     
   return (span, degree, N_total, Win_total, n_points, SSE, loessplot)
 }
@@ -109,12 +112,13 @@ myloess <- function(x, y, span = 0.5, degree = 1, show.plot = TRUE){
 ```
 
 ```{r local_subset}
-create_subset <- function(obs, vector, k){
-  return(vector[order(abs(obs-vector))][seq_len(k)])
+create_subset <- function(obs, x, y, k){
+  sub_df <- data.frame(x = x, y=y, dist = abs(obs-x))
+  sub_df <- sub_df[order(sub_df$dist),]
+  sub_df <- sub_df[1:k,]
+  sub_df <- sub_df[order(sub_df$x),]
+  return (sub_df)
 }
-x <- c(1,2,3,4,5,6,7,8,9)
-create_subset(9,x,3)
-
 
 ```
 
