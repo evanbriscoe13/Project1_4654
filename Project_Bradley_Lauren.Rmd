@@ -37,22 +37,22 @@ myloess <- function(x, y, span = 0.5, degree = 1, show.plot = TRUE){
   if(degree == 2){
     for (val in x){
       #Create current local subset vector
-      loc_dat <- create_subset(val, x, n_points)
+      loc_dat <- create_subset(val, x, y, n_points)
       #Compare to previous local subset
       # If previous local dataset is not equal to current
-      if(!setequal(loc_dat, past_loc_dat)){
+      if(!setequal(loc_dat$x, past_loc_dat)){
         Win_total = Win_total + 1
-        past_loc_dat <- loc_dat
+        past_loc_dat <- loc_dat$x
       }
       #calculate distance vector
-      distances <- abs(loc_dat-val)
+      distances <- loc_dat$dist
       max.dist <- max(distances)
       #calculate scaled distances vector
       scale_dists <- distances/max.dist
       # call weight function to make vector
       wts <- triwts(scale_dists)
        #conduct weighted regression
-      fit <- lm(y~ x + x**2, weights = wts)
+      fit <- lm(y~ x + x**2, weights = wts, data = loc_dat)
       #calculate predicted value from regression fit and coefficients
       reg.value <- fit$coefficients[1] + fit$coefficients[2]*val +fit$coefficients[3]*val**2
       #Add to fitted values vector
@@ -67,34 +67,36 @@ myloess <- function(x, y, span = 0.5, degree = 1, show.plot = TRUE){
     for (val in x){
       
       #Create current local subset vector
-      loc_dat <- create_subset(val, x, n_points)
+      loc_dat <- create_subset(val, x,y, n_points)
       #Compare to previous local subset
       # If previous local dataset is not equal to current
-      if(!setequal(loc_dat, past_loc_dat)){
+      if(!setequal(loc_dat$x, past_loc_dat)){
         Win_total = Win_total + 1
-        past_loc_dat <- loc_dat
+        past_loc_dat <- loc_dat$x
       }
       #calculate distance vector
-      distances <- abs(loc_dat-val)
+      distances <- loc_dat$dist
       max.dist <- max(distances)
       #calculate scaled distances vector
       scale_dists <- distances/max.dist
       # call weight function to make vector
       wts <- triwts(scale_dists)
       #conduct weighted regression
-      fit <- lm(y~ x, weights = wts)
+      fit <- lm(y~ x, weights = wts, data = loc_dat)
       #calculate predicted value from regression fit and coefficients
       reg.value <- fit$coefficients[1] + fit$coefficients[2]*val
       #Add to fitted values vector
       y.fitted <- append(y.fitted, reg.value)
     }
-    SSE <- (y-y.fitted)**2
+    SSE <- sum((y-y.fitted)**2)
   }
   
-  loessplot <- ggplot(aes(x = x, y = y)) + theme_bw() + geom_point() + 
-              geom_line(color='red', aes(x= x, y=y.fitted))
+  #loessplot <- ggplot(aes(x = x, y = y)) + theme_bw() + geom_point() + 
+  #            geom_line(color='red', aes(x= x, y=y.fitted))
+  
+  ls <- list('Span' = span, 'degree' = degree, 'N_total' = N_total, 'Win_total' = Win_total, 'n_points' = n_points, 'SSE' = SSE)
     
-  return (span, degree, N_total, Win_total, n_points, SSE, loessplot)
+  return (ls)
 }
 # Your function should return a named list containing the following:
 # span: proportion of data used in each window (controls the bandwidth)
