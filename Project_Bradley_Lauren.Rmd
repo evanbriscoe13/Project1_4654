@@ -1,6 +1,6 @@
 ---
 title: "Lauren_bradley_proj1"
-author: "Lauren Bradley"
+author: "Lauren Bradley, Evan Briscoe"
 date: "10/21/2021"
 output: html_document
 ---
@@ -13,6 +13,39 @@ knitr::opts_chunk$set(echo = TRUE)
 library(ggplot2)
 ```
 
+# Main Goal: Create Loess Regression Function
+
+```{r local_subset}
+# Function that creates the windows 
+create_subset <- function(obs, x, y, k){
+  sub_df <- data.frame(x = x, y=y, dist = abs(obs-x))
+  sub_df <- sub_df[order(sub_df$dist),]
+  sub_df <- sub_df[1:k,]
+  sub_df <- sub_df[order(sub_df$x),]
+  return (sub_df)
+}
+
+```
+
+
+```{r weight function}
+# Function that creates the weights
+triwts <- function(distances){
+  #allocate weights vector
+  wts <- double(length = length(distances))
+  
+  for (i in 1:length(distances)){
+    if (abs(distances[i]) <= 1){
+      wts[i] <- (1-abs(distances[i])**3)**3
+    }
+    else
+      wts[i] <- 0
+  }
+  return (wts)
+}
+dist <- c(0.7866237, 0.3744029, 0.168412, 0.0000000, 0.6660479, 0.7498743, 1.0000000)
+triwts(dist)
+```
 
 ```{r}
 # Your function will have the following inputs.
@@ -137,60 +170,99 @@ myloess <- function(x, y, span = 0.5, degree = 1, show.plot = TRUE){
 #  You should use geom_line() or similar to plot your final the LOESS curve.
 
 # Make sure you can access the objects properly using the $ notation.
-myloess(x,y,degree = 2, show.plot = FALSE)
 ```
 
-```{r local_subset}
-create_subset <- function(obs, x, y, k){
-  sub_df <- data.frame(x = x, y=y, dist = abs(obs-x))
-  sub_df <- sub_df[order(sub_df$dist),]
-  sub_df <- sub_df[1:k,]
-  sub_df <- sub_df[order(sub_df$x),]
-  return (sub_df)
-}
-
-```
-
-
-```{r weight function}
-triwts <- function(distances){
-  #allocate weights vector
-  wts <- double(length = length(distances))
-  
-  for (i in 1:length(distances)){
-    if (abs(distances[i]) <= 1){
-      wts[i] <- (1-abs(distances[i])**3)**3
-    }
-    else
-      wts[i] <- 0
-  }
-  return (wts)
-}
-dist <- c(0.7866237, 0.3744029, 0.168412, 0.0000000, 0.6660479, 0.7498743, 1.0000000)
-triwts(dist)
-```
-
+# Problem 1
 
 ```{r}
-library(ggplot2)
 load("ozone.RData")
 data("ozone")
 
-#ggplot(ozone, aes(x = temperature, y = ozone)) + theme_bw() + #geom_point()
+ggplot(ozone, aes(x = temperature, y = ozone)) + theme_bw() + geom_point()
 
-ggplot(aes(x = x, y = y)) + 
-      theme_bw() + 
-      geom_line(color='red', aes(x = x, y = y.fitted))
 ```
+
+## 1. 
 
 ```{r}
-poly1 <- lm(ozone ~ temperature, data = ozone)
-predicted_df <- data.frame(mpg_pred = predict(poly1, ozone), temp=ozone$)
+temp_2 <- ozone$temperature^2
+temp_3 <- ozone$temperature^3
+temp_4 <- ozone$temperature^4
+temp_5 <- ozone$temperature^5
+temp_6 <- ozone$temperature^6
 
-ggplot(ozone, aes(x = temperature, y = ozone)) + theme_bw() + geom_point()
-  + geom_line(color='red', data = ozone, aes(x= poly1))
+poly1 <- lm(ozone ~ temperature, data = ozone)
+poly2 <- lm(ozone ~ temperature + temp_2, data = ozone)
+poly3 <- lm(ozone ~ temperature + temp_2 + temp_3, data = ozone)
+poly4 <- lm(ozone ~ temperature + temp_2 + temp_3 + temp_4, data = ozone)
+poly5 <- lm(ozone ~ temperature + temp_2 + temp_3 + temp_4 + temp_5, data = ozone)
+poly6 <- lm(ozone ~ temperature + temp_2 + temp_3 + temp_4 + temp_5 + temp_6, data = ozone)
+
+summary(poly1)
+summary(poly2)
+summary(poly3)
+summary(poly4)
+summary(poly5)
+summary(poly6)
+
+
+```
+By looking at the regression summaries, the polynomial fit that appears to work the best is degree = 4
+
+## 2. Loess Regression Fits
+
+```{r}
+tab_content <- c()
+for (i in seq(0.25,0.75,.05)){
+  degree_1 <- myloess(ozone$temperature, ozone$ozone, span = i, degree = 1, show.plot = FALSE)
+  degree_2 <- myloess(ozone$temperature, ozone$ozone, span = i, degree = 2, show.plot = FALSE)
+  
+  tab_content <- append(tab_content, degree_1$SSE)
+  tab_content <- append(tab_content, degree_2$SSE)
+  tab_content <- append(tab_content, i)
+}
+
+table <- matrix(tab_content, ncol = 3, byrow = TRUE)
+colnames(table) <- c('Degree1SSE', 'Degree2SSE', 'Span')
+table <- as.table(table)
+table
+```
+
+The best fits for Degree 1 are spans 0.25, 0.30, 0.35.
+
+The best fits for Degree 2 are spans 0.25, 0.30, 0.35.
+
+```{r}
+myloess(ozone$temperature, ozone$ozone, span = 0.25, degree = 1, show.plot = TRUE)$loessplot + labs(title = "Degree 1 Span 0.25")
+myloess(ozone$temperature, ozone$ozone, span = 0.30, degree = 1, show.plot = TRUE)$loessplot + labs(title = "Degree 1 Span 0.30")
+myloess(ozone$temperature, ozone$ozone, span = 0.35, degree = 1, show.plot = TRUE)$loessplot + labs(title = "Degree 1 Span 0.35")
+myloess(ozone$temperature, ozone$ozone, span = 0.25, degree = 2, show.plot = TRUE)$loessplot + labs(title = "Degree 2 Span 0.25")
+myloess(ozone$temperature, ozone$ozone, span = 0.30, degree = 2, show.plot = TRUE)$loessplot + labs(title = "Degree 2 Span 0.30")
+myloess(ozone$temperature, ozone$ozone, span = 0.35, degree = 2, show.plot = TRUE)$loessplot + labs(title = "Degree 2 Span 0.35")
 
 ```
 
 
+## 3. Compare with loess()
+```{r}
+mod1_25 <- loess(ozone ~ temperature, data = ozone, span = 0.25, degree = 1)
+mod1_30 <- loess(ozone ~ temperature, data = ozone, span = 0.30, degree = 1)
+mod1_35 <- loess(ozone ~ temperature, data = ozone, span = 0.35, degree = 1)
+mod2_25 <- loess(ozone ~ temperature, data = ozone, span = 0.25, degree = 2)
+mod2_30 <- loess(ozone ~ temperature, data = ozone, span = 0.30, degree = 2)
+mod2_35 <- loess(ozone ~ temperature, data = ozone, span = 0.35, degree = 2)
+
+print("Degree 1 SSE")
+sum(mod1_25$residuals^2)
+sum(mod1_30$residuals^2)
+sum(mod1_35$residuals^2)
+
+print("Degree 2 SSE")
+sum(mod2_25$residuals^2)
+sum(mod2_30$residuals^2)
+sum(mod2_35$residuals^2)
+```
+```{r}
+
+```
 
