@@ -60,7 +60,9 @@ myloess <- function(x, y, span = 0.5, degree = 1, show.plot = TRUE){
       # call weight function to make vector
       wts <- triwts(scale_dists)
        #conduct weighted regression
-      fit <- lm(y~ x + x**2, weights = wts, data = loc_dat)
+      x_squared <- loc_dat$x^2
+      fit <- lm(y~ x + x_squared, weights = wts, data = loc_dat)
+      
       #calculate predicted value from regression fit and coefficients
       reg.value <- fit$coefficients[1] + fit$coefficients[2]*val +fit$coefficients[3]*val**2
       #Add to fitted values vector
@@ -115,8 +117,12 @@ myloess <- function(x, y, span = 0.5, degree = 1, show.plot = TRUE){
       
   ls <- list('Span' = span, 'degree' = degree, 'N_total' = N_total, 'Win_total' = Win_total, 'n_points' = n_points, 'SSE' = SSE, 'loessplot' = loessplot)
   
-  
-  return (ls)
+  if (show.plot){
+    return (ls)
+  }
+  else{
+    return (ls[1:6])
+  }
 }
 # Your function should return a named list containing the following:
 # span: proportion of data used in each window (controls the bandwidth)
@@ -131,7 +137,7 @@ myloess <- function(x, y, span = 0.5, degree = 1, show.plot = TRUE){
 #  You should use geom_line() or similar to plot your final the LOESS curve.
 
 # Make sure you can access the objects properly using the $ notation.
-myloess(x,y,degree = 2)
+myloess(x,y,degree = 2, show.plot = FALSE)
 ```
 
 ```{r local_subset}
