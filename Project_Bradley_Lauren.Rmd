@@ -40,6 +40,8 @@ myloess <- function(x, y, span = 0.5, degree = 1, show.plot = TRUE){
   #Win_total
   Win_total = 0
   # Degree 2
+  # index counter
+  index = 1
   if(degree == 2){
     for (val in x){
       #Create current local subset vector
@@ -62,7 +64,10 @@ myloess <- function(x, y, span = 0.5, degree = 1, show.plot = TRUE){
       #calculate predicted value from regression fit and coefficients
       reg.value <- fit$coefficients[1] + fit$coefficients[2]*val +fit$coefficients[3]*val**2
       #Add to fitted values vector
-      y.fitted <- append(y.fitted, reg.value)
+      y.fitted[index] <- reg.value
+      
+      #increase index for next iteration
+      index = index+1
     }
     
   }
@@ -92,10 +97,14 @@ myloess <- function(x, y, span = 0.5, degree = 1, show.plot = TRUE){
       #calculate predicted value from regression fit and coefficients
       reg.value <- fit$coefficients[1] + fit$coefficients[2]*val
       #Add to fitted values vector
-      y.fitted <- append(y.fitted, reg.value)
+      y.fitted[index] <- reg.value
+      
+      #increase index for next iteration
+      index = index+1
     }
-    SSE <- sum((y-y.fitted)**2)
+    
   }
+  SSE <- sum((y-y.fitted)**2)
   
   
   dat.fitted <- data.frame(x, y.fitted)
@@ -122,7 +131,7 @@ myloess <- function(x, y, span = 0.5, degree = 1, show.plot = TRUE){
 #  You should use geom_line() or similar to plot your final the LOESS curve.
 
 # Make sure you can access the objects properly using the $ notation.
-myloess(x,y)
+myloess(x,y,degree = 2)
 ```
 
 ```{r local_subset}
