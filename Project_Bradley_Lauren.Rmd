@@ -10,6 +10,11 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ```{r}
+library(ggplot2)
+```
+
+
+```{r}
 # Your function will have the following inputs.
 # 
 # * x - a numeric input vector
@@ -22,6 +27,7 @@ knitr::opts_chunk$set(echo = TRUE)
 # If show.plot = TRUE then you must show a plot of either the final fit
 myloess <- function(x, y, span = 0.5, degree = 1, show.plot = TRUE){
   
+  dat <- data.frame(x,y)
   # Your code goes here
   #N_total
   N_total <- length(x)
@@ -91,11 +97,16 @@ myloess <- function(x, y, span = 0.5, degree = 1, show.plot = TRUE){
     SSE <- sum((y-y.fitted)**2)
   }
   
-  #loessplot <- ggplot(aes(x = x, y = y)) + theme_bw() + geom_point() + 
-  #            geom_line(color='red', aes(x= x, y=y.fitted))
   
-  ls <- list('Span' = span, 'degree' = degree, 'N_total' = N_total, 'Win_total' = Win_total, 'n_points' = n_points, 'SSE' = SSE)
-    
+  dat.fitted <- data.frame(x, y.fitted)
+  loessplot <- ggplot(dat, aes(x = x, y = y)) + 
+      theme_bw() + 
+      geom_point() +
+      geom_line(color='red', data = dat.fitted, aes(x = x, y = y.fitted))
+      
+  ls <- list('Span' = span, 'degree' = degree, 'N_total' = N_total, 'Win_total' = Win_total, 'n_points' = n_points, 'SSE' = SSE, 'loessplot' = loessplot)
+  
+  
   return (ls)
 }
 # Your function should return a named list containing the following:
@@ -111,6 +122,7 @@ myloess <- function(x, y, span = 0.5, degree = 1, show.plot = TRUE){
 #  You should use geom_line() or similar to plot your final the LOESS curve.
 
 # Make sure you can access the objects properly using the $ notation.
+myloess(x,y)
 ```
 
 ```{r local_subset}
@@ -149,7 +161,11 @@ library(ggplot2)
 load("ozone.RData")
 data("ozone")
 
-ggplot(ozone, aes(x = temperature, y = ozone)) + theme_bw() + geom_point()
+#ggplot(ozone, aes(x = temperature, y = ozone)) + theme_bw() + #geom_point()
+
+ggplot(aes(x = x, y = y)) + 
+      theme_bw() + 
+      geom_line(color='red', aes(x = x, y = y.fitted))
 ```
 
 ```{r}
