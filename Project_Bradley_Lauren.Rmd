@@ -263,6 +263,8 @@ sum(mod2_30$residuals^2)
 sum(mod2_35$residuals^2)
 ```
 ```{r}
-
+ggplot(ozone, aes(x = temperature, y = ozone)) + geom_point() + geom_smooth(method = "loess") + labs(title = "Built-in Loess")
 ```
+
+The graphs from problem 2 have more precise and frequent curves with the manual loess function while the graph in problem 3 with the geom_smooth() function has a smoother curve. 
 
