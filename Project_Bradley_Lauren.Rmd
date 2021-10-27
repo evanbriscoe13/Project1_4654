@@ -241,7 +241,7 @@ myloess(ozone$temperature, ozone$ozone, span = 0.30, degree = 2, show.plot = TRU
 myloess(ozone$temperature, ozone$ozone, span = 0.35, degree = 2, show.plot = TRUE)$loessplot + labs(title = "Degree 2 Span 0.35")
 
 ```
-
+Yes, we feel that the data is over fit for degree 1 and 2's span of 0.25 because the line is super jagged with unnecessary curves.  The best span with a smoother curve is 0.35 for both degree 1 and 2.
 
 ## 3. Compare with loess()
 ```{r}
@@ -262,9 +262,83 @@ sum(mod2_25$residuals^2)
 sum(mod2_30$residuals^2)
 sum(mod2_35$residuals^2)
 ```
+
 ```{r}
 ggplot(ozone, aes(x = temperature, y = ozone)) + geom_point() + geom_smooth(method = "loess") + labs(title = "Built-in Loess")
 ```
 
 The graphs from problem 2 have more precise and frequent curves with the manual loess function while the graph in problem 3 with the geom_smooth() function has a smoother curve. 
+
+# Problem 2
+
+```{r}
+library(MASS)
+data("mcycle")
+
+ggplot(mcycle, aes(x = times, y = accel)) + theme_bw() + geom_point()
+```
+
+## 1.
+
+```{r}
+tab_content <- c()
+for (i in seq(0.25,0.75,.05)){
+  degree_1 <- myloess(mcycle$times, mcycle$accel, span = i, degree = 1, show.plot = FALSE)
+  degree_2 <- myloess(mcycle$times, mcycle$accel, span = i, degree = 2, show.plot = FALSE)
+  
+  tab_content <- append(tab_content, degree_1$SSE)
+  tab_content <- append(tab_content, degree_2$SSE)
+  tab_content <- append(tab_content, i)
+}
+
+table <- matrix(tab_content, ncol = 3, byrow = TRUE)
+colnames(table) <- c('Degree1SSE', 'Degree2SSE', 'Span')
+table <- as.table(table)
+table
+```
+
+The best fits for Degree 1 are spans 0.25, 0.30, 0.35.
+
+The best fits for Degree 2 are spans 0.25, 0.30, 0.35.
+
+```{r}
+myloess(mcycle$times, mcycle$accel, span = 0.25, degree = 1, show.plot = TRUE)$loessplot + labs(title = "Degree 1 Span 0.25")
+myloess(mcycle$times, mcycle$accel, span = 0.30, degree = 1, show.plot = TRUE)$loessplot + labs(title = "Degree 1 Span 0.30")
+myloess(mcycle$times, mcycle$accel, span = 0.35, degree = 1, show.plot = TRUE)$loessplot + labs(title = "Degree 1 Span 0.35")
+myloess(mcycle$times, mcycle$accel, span = 0.25, degree = 2, show.plot = TRUE)$loessplot + labs(title = "Degree 2 Span 0.25")
+myloess(mcycle$times, mcycle$accel, span = 0.30, degree = 2, show.plot = TRUE)$loessplot + labs(title = "Degree 2 Span 0.30")
+myloess(mcycle$times, mcycle$accel, span = 0.35, degree = 2, show.plot = TRUE)$loessplot + labs(title = "Degree 2 Span 0.35")
+```
+
+The degree 2 models have a better fit than the degree 1 models. Degree 2 with a span of 0.30 and 0.35 have the best model fits. 
+
+## 2. 
+
+```{r}
+mod1_25 <- loess(times ~ accel, data = mcycle, span = 0.25, degree = 1)
+mod1_30 <- loess(times ~ accel, data = mcycle, span = 0.30, degree = 1)
+mod1_35 <- loess(times ~ accel, data = mcycle, span = 0.35, degree = 1)
+mod2_25 <- loess(times ~ accel, data = mcycle, span = 0.25, degree = 2)
+mod2_30 <- loess(times ~ accel, data = mcycle, span = 0.30, degree = 2)
+mod2_35 <- loess(times ~ accel, data = mcycle, span = 0.35, degree = 2)
+
+print("Degree 1 SSE")
+sum(mod1_25$residuals^2)
+sum(mod1_30$residuals^2)
+sum(mod1_35$residuals^2)
+
+print("Degree 2 SSE")
+sum(mod2_25$residuals^2)
+sum(mod2_30$residuals^2)
+sum(mod2_35$residuals^2)
+```
+
+
+```{r}
+ggplot(mcycle, aes(x = times, y = accel)) + geom_point() + geom_smooth(method = "loess") + labs(title = "Built-in Loess")
+```
+
+
+The manual function we made is better than the built in function. 
+
 
