@@ -12,8 +12,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r}
 library(ggplot2)
 library(plyr)
-test <- c(4,4,4,1,1,2,3,5,6,7,8)
-(count(test))
+library(caret)
 ```
 
 # Main Goal: Create Loess Regression Function
@@ -392,6 +391,7 @@ mykNN <- function(train, test, y_train, y_test, k = 3, weighted = TRUE){
   if (weighted == FALSE){
     dists <- calculateDistances(y_train, train)
     dists <- sort(dists)[1:k]
+    
   }
     
     
@@ -402,7 +402,7 @@ mykNN <- function(train, test, y_train, y_test, k = 3, weighted = TRUE){
     #  * The error rate = 1 - accuracy
     #  * A confusion matrix
     #  * The value of k used
-    if( is.factor(y_test)){
+  else if( is.factor(y_test)){
       # Go through each row (entry) of test 
     for (i in dim(test)[1]){
       # Get distances of test row with all training rows
@@ -420,7 +420,16 @@ mykNN <- function(train, test, y_train, y_test, k = 3, weighted = TRUE){
       label <- weight_sum[1,1]
       y_hat <- append(y_hat, label)
     }
-    }
+    tb <- table(y_hat, y_test)
+    accuracy <- sum(diag(tb)/sum(rowSums(x))) * 100
+    error_rate <- 1 - accuracy
+    conf <- confusionMatrix(data = y_hat, reference = y_test)
+    
+    ls <- list('yhat' = y_hat, 'accuracy' = accuracy, 'error_rate' = error_rate, 'confusion_matrix' = conf, 'k' = k)
+    
+    return (ls)
+
+  }
   # Responses are number vector (Regression)
   # If you are doing regression, then your function must return:
   #  * A numeric vector (yhat) for the predicted responses for the testing data
@@ -447,15 +456,10 @@ mykNN <- function(train, test, y_train, y_test, k = 3, weighted = TRUE){
     }
     res_vec <- y_test - unlist(y_hat)
     SSE <- sum((y_test-unlist(y_hat))^2)
-    
-    return(y_hat, res_vec, SSE, k)
+    ls <- list("yhat" = y_hat, "residual_vector" = res_vec, "SSE" = SSE, "k" = k)
+    return (ls)
   }
-  
-  return("list of objects seen below")
 }
-
-
-
 
 ```
 
