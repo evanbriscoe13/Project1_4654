@@ -350,7 +350,14 @@ calculateDistances <- function(newData, training_features) {
   names(D) <- 1:nrow(training_features)
   return(D) # Returns a vector of the distances
 }
-sum(sqrt((ozone[1,]-45)^2))
+tester <- data.frame(test1 = c(0,1,2), test2 = c(3,4,5), test3 = c(6,7,8))
+tester2 <- c(1,2,3)
+d <- calculateDistances(tester2, tester)
+a <- c(7, 3, 4)
+index = seq_along(a)
+o <- order(a, decreasing = FALSE)
+test <- cbind(a[o],index[o])
+test
 ```
 
 # Main Goal: kNN
@@ -382,19 +389,35 @@ mykNN <- function(train, test, y_train, y_test, k = 3, weighted = TRUE){
   }
     
     
-    # If responses are factor vector
+    # If responses are factor vector (classification)
     if( is.factor(y_test)){
       
       
     }
-    # Responses are number vector
-    else {
-      dists <- calculateDistances(y_train, train)
-      dists <- sort(dists)[1:k]
-      weights <- 1/dists
-      c <- weights/sum(weigts)
-      y_fitted <- sum(c * y_train)
+    # Responses are number vector (Regression)
+  else {
+    # Go through each row (entry) of test 
+    for (i in dim(test)[1]){
+      # Get distances of test row with all training rows
+      dists <- calculateDistances(test[i,], train)
+      index <- seq_along(dists)
+      o <- order(dists, decreasing = FALSE)
+      # Grab k closest distances and indexes
+      dists_k <- cbind(dists[o],index[o])[1:k,]
+
+      weights <- 1/dists[,1]
+      c <- weights/sum(weights)
+      fitted_value = 0
+      for (x in seq_along(index)){
+        fitted_value <- fitted_value + (c[x]*y_train[x])
+      }
+      y_hat <- append(y_hat, fitted_value)
     }
+    res_vec <- y_test - unlist(y_hat)
+    SSE <- sum((y_test-unlist(y_hat))^2)
+    
+    return(y_hat, res_vec, SSE, k)
+  }
   
   return("list of objects seen below")
 }
