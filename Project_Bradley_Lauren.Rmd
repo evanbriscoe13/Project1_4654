@@ -11,6 +11,9 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r}
 library(ggplot2)
+library(plyr)
+test <- c(4,4,4,1,1,2,3,5,6,7,8)
+(count(test))
 ```
 
 # Main Goal: Create Loess Regression Function
@@ -358,6 +361,9 @@ index = seq_along(a)
 o <- order(a, decreasing = FALSE)
 test <- cbind(a[o],index[o])
 test
+a[index]
+df <- aggregate(.~svi,data = prostate_clean, FUN = sum)
+df[order(df$age),]
 ```
 
 # Main Goal: kNN
@@ -390,11 +396,37 @@ mykNN <- function(train, test, y_train, y_test, k = 3, weighted = TRUE){
     
     
     # If responses are factor vector (classification)
+    # If you are doing classification, then your function must return:
+    #  * A factor vector (yhat) for the predicted categories for the testing data
+    #  * The accuracy of the classification
+    #  * The error rate = 1 - accuracy
+    #  * A confusion matrix
+    #  * The value of k used
     if( is.factor(y_test)){
+      # Go through each row (entry) of test 
+    for (i in dim(test)[1]){
+      # Get distances of test row with all training rows
+      dists <- calculateDistances(test[i,], train)
+      index <- seq_along(dists)
+      o <- order(dists, decreasing = FALSE)
+      # Grab k closest distances and indexes
+      dists_k <- cbind(dists[o],index[o])[1:k,]
+
+      weights <- 1/dists[,1]
       
-      
+      weight_sum <- data.frame(Label = y_train[index], weight = weights)
+      weight_sum <- aggregate(.~Label, data = weight_sum, FUN = sum)
+      weight_sum <- weight_sum[order(weight_sum$weight, decreasing = TRUE)]
+      label <- weight_sum[1,1]
+      y_hat <- append(y_hat, label)
     }
-    # Responses are number vector (Regression)
+    }
+  # Responses are number vector (Regression)
+  # If you are doing regression, then your function must return:
+  #  * A numeric vector (yhat) for the predicted responses for the testing data
+  #  * The residual vector
+  #  * The SSE
+  #  * The value of k used
   else {
     # Go through each row (entry) of test 
     for (i in dim(test)[1]){
@@ -405,11 +437,11 @@ mykNN <- function(train, test, y_train, y_test, k = 3, weighted = TRUE){
       # Grab k closest distances and indexes
       dists_k <- cbind(dists[o],index[o])[1:k,]
 
-      weights <- 1/dists[,1]
+      weights <- 1/dists_k[,1]
       c <- weights/sum(weights)
       fitted_value = 0
-      for (x in seq_along(index)){
-        fitted_value <- fitted_value + (c[x]*y_train[x])
+      for (x in seq_along(k)){
+        fitted_value <- fitted_value + (c[x]*y_train[index[x]])
       }
       y_hat <- append(y_hat, fitted_value)
     }
@@ -422,17 +454,8 @@ mykNN <- function(train, test, y_train, y_test, k = 3, weighted = TRUE){
   return("list of objects seen below")
 }
 
-# If you are doing classification, then your function must return:
-#  * A factor vector (yhat) for the predicted categories for the testing data
-#  * The accuracy of the classification
-#  * The error rate = 1 - accuracy
-#  * A confusion matrix
-#  * The value of k used
 
-# If you are doing regression, then your function must return:
-#  * A numeric vector (yhat) for the predicted responses for the testing data
-#  * The residual vector
-#  * The SSE
-#  * The value of k used
+
+
 ```
 
