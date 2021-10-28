@@ -341,6 +341,17 @@ ggplot(mcycle, aes(x = times, y = accel)) + geom_point() + geom_smooth(method = 
 
 The manual function we made is better than the built in function. 
 
+```{r distance}
+#calculate the distance between our current point x
+# each training point in the testing data set (features only)
+calculateDistances <- function(newData, training_features) {
+  D <- dist(rbind(newData, training_features)) # Compute the L2 norm by default
+  D <- as.matrix(D)[-1, 1]
+  names(D) <- 1:nrow(training_features)
+  return(D) # Returns a vector of the distances
+}
+sum(sqrt((ozone[1,]-45)^2))
+```
 
 # Main Goal: kNN
 
@@ -357,14 +368,35 @@ The manual function we made is better than the built in function.
 #
 # If weighted = TRUE, then your function must used the distance weighted kNN as described above,
 #  otherwise it should do the default knn method.
+library(class)
 
+x <- factor(c(1,1,0,0))
 
 mykNN <- function(train, test, y_train, y_test, k = 3, weighted = TRUE){
-
+  
   # Your code goes here
-
-  return(list of objects seen below)
-
+  # Do kNN instead of weighted
+  if (weighted == FALSE){
+    dists <- calculateDistances(y_train, train)
+    dists <- sort(dists)[1:k]
+  }
+    
+    
+    # If responses are factor vector
+    if( is.factor(y_test)){
+      
+      
+    }
+    # Responses are number vector
+    else {
+      dists <- calculateDistances(y_train, train)
+      dists <- sort(dists)[1:k]
+      weights <- 1/dists
+      c <- weights/sum(weigts)
+      y_fitted <- sum(c * y_train)
+    }
+  
+  return("list of objects seen below")
 }
 
 # If you are doing classification, then your function must return:
