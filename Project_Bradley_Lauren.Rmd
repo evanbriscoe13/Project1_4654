@@ -177,8 +177,7 @@ myloess <- function(x, y, span = 0.5, degree = 1, show.plot = TRUE){
 # Problem 1
 
 ```{r}
-load("ozone.RData")
-data("ozone")
+load("C:/Users/laure/git/Project1_4654/ozone.RData")
 
 ggplot(ozone, aes(x = temperature, y = ozone)) + theme_bw() + geom_point()
 
@@ -354,17 +353,6 @@ calculateDistances <- function(newData, training_features) {
   names(D) <- 1:nrow(training_features)
   return(D) # Returns a vector of the distances
 }
-#tester <- data.frame(test1 = c(0,1,2), test2 = c(3,4,5), test3 = #c(6,7,8))
-#tester2 <- c(1,2,3)
-#d <- calculateDistances(tester2, tester)
-#a <- c(7, 3, 4)
-#index = seq_along(a)
-#o <- order(a, decreasing = FALSE)
-#test <- cbind(a[o],index[o])
-#test
-#a[index]
-#df <- aggregate(.~svi,data = prostate_clean, FUN = sum)
-#df[order(df$age),]
 ```
 
 
@@ -398,7 +386,12 @@ mykNN <- function(train, test, y_train, y_test, k = 3, weighted = TRUE){
         index <- seq_along(dists)
         # Grab k closest distances and indexes
         dists_k <- cbind(dists[o],index[o])[1:k,]
-        dist_k_idx <- dists_k[,2]
+        if (k == 1){
+          dist_k_idx <- dists_k[2]
+        }
+        else {
+          dist_k_idx <- dists_k[,2]
+        }
         find_lab <- data.frame(Label = y_train[dist_k_idx], dist = dists_k[,1])
         find_lab <- find_lab[order(find_lab$dist, decreasing = TRUE),]
         label <- find_lab[1,1]
@@ -421,12 +414,18 @@ mykNN <- function(train, test, y_train, y_test, k = 3, weighted = TRUE){
         o <- order(dists, decreasing = FALSE)
         # Grab k closest distances and indexes
         dists_k <- cbind(dists[o],index[o])[1:k,]
-
-        fitted_value <- 0
-        for (x in seq_along(k)){
-          fitted_value <- fitted_value + y_train[index[x]]
+        if (k == 1){
+          dist_k_idx <- dists_k[2]
         }
-        y_hat <- append(y_hat, (1/k)*fitted_value)
+        else {
+          dist_k_idx <- dists_k[,2]
+        }
+        
+        fitted_value <- c()
+        for (x in seq_along(k)){
+          fitted_value <- append(fitted_value, y_train[dist_k_idx])
+        }
+        y_hat <- append(y_hat, (1/k)*sum(fitted_value))
       }
       res_vec <- y_test - unlist(y_hat)
       SSE <- sum((y_test-unlist(y_hat))^2)
@@ -454,8 +453,15 @@ mykNN <- function(train, test, y_train, y_test, k = 3, weighted = TRUE){
       o <- order(dists, decreasing = FALSE)
       # Grab k closest distances and indexes
       dists_k <- cbind(dists[o],index[o])[1:k,]
-      weights <- 1/dists_k[,1]
-      dist_k_idx <- dists_k[,2]
+      if (k == 1){
+        weights <- 1/dists_k[1]
+        dist_k_idx <- dists_k[2]
+      }
+      else{
+        weights <- 1/dists_k[,1]
+        dist_k_idx <- dists_k[,2]
+      }
+      
 
       weight_sum <- data.frame(Label = y_train[dist_k_idx], weight = weights)
       weight_sum <- aggregate(.~Label, data = weight_sum, FUN = sum)
@@ -490,16 +496,18 @@ mykNN <- function(train, test, y_train, y_test, k = 3, weighted = TRUE){
       dists_k <- cbind(dists[o],index[o])[1:k,]
       if (k == 1){
         weights <- 1/dists_k[1]
+        dist_k_idx <- dists_k[2]
       }
       else{
         weights <- 1/dists_k[, 1]
+        dist_k_idx <- dists_k[, 2]
       }
       c <- weights/sum(weights)
-      fitted_value <- 0
+      fitted_value <- c()
       for (x in seq_along(k)){
-        fitted_value <- fitted_value + (c[x]*y_train[index[x]])
+        fitted_value <- append(fitted_value, (c[x]*y_train[dist_k_idx]))
       }
-      y_hat <- append(y_hat, fitted_value)
+      y_hat <- append(y_hat, sum(fitted_value))
     }
     res_vec <- y_test - unlist(y_hat)
     SSE <- sum((y_test-unlist(y_hat))^2)
@@ -592,7 +600,7 @@ It looks like k = 3 is the best number of neighbors.
 ```{r}
 reg_kNN3$confusion_matrix
 ```
-With k = 3, the k nearest neighbors is 66.95% accurate.
+With k = 3, the k nearest neighbors is 69.45% accurate.
 
 ## Graphing 
 
@@ -647,14 +655,14 @@ accuracy <- c(wt_kNN2$accuracy, wt_kNN3$accuracy, wt_kNN4$accuracy ,wt_kNN5$accu
 plot(k, accuracy, main = "Accuracy vs. K", pch = 16)
 ```
 
-Using 10 of the neighbors looks the best. 
+Using 3 of the neighbors looks the best. 
 
 ## 5. Display confusion matrix of k = 10
 
 ```{r}
 wt_kNN10$confusion_matrix
 ```
-Using k = 10, there is an accuracy of 72.88%
+Using k = 10, there is an accuracy of 67.8%
 
 Comparing the weighted and regular knn with classification, as you increase the amount of neighbors for the weighted knn, there is an increase of accuracy. As you increase the amount of neighbors for the regular knn, there is a decrease of accuracy. 
 
@@ -714,21 +722,23 @@ colnames(table) <- c('k', 'SSE')
 table <- as.table(table)
 knitr::kable(table)
 ```
-The lease error occurs at k = 3. In addition, the regression lines only look accurate at the begining 
+The lease error occurs at k = 1. In the plot, it also looks that the regression is more accurate and doesn't have many bumps. 
+
+## Part b.
 
 ```{r}
-dists <- calculateDistances(test_features[1,], train_features)
-index <- seq_along(dists)
-o <- order(dists, decreasing = FALSE)
-# Grab k closest distances and indexes
-dists_k <- cbind(dists[o],index[o])[1:5,]
-weights <- 1/dists_k[, 1]
-
-c <- weights/sum(weights)
-fitted_value <- 0
-for (x in seq_along(k)){
-  fitted_value <- fitted_value + (c[x]*train_classes[index[x]])
+plot_vals <- c()
+for (i in 1:20){
+  dwkNN <- mykNN(train_features, test_features, train_classes, test_classes, k = i, weighted = TRUE)
+  
+  plot_vals <- append(plot_vals, dwkNN$SSE)
 }
-y_hat <- append(y_hat, fitted_value)
 ```
 
+
+```{r}
+k <- 1:20
+plot(k, plot_vals, main = "SSE vs. K", ylab = "SSE", pch = 16)
+```
+
+As k increases, the sum of squared errors increases. The k and SSE have a strong positive linear regression. Therefore a smaller k will have the best regression prediction. 
