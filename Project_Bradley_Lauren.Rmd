@@ -341,7 +341,9 @@ ggplot(mcycle, aes(x = times, y = accel)) + geom_point() + geom_smooth(method = 
 ```
 
 
-The manual function we made is better than the built in function. 
+The manual function we made is better than the built in function.
+
+# Main Goal: kNN
 
 ```{r distance}
 #calculate the distance between our current point x
@@ -352,20 +354,19 @@ calculateDistances <- function(newData, training_features) {
   names(D) <- 1:nrow(training_features)
   return(D) # Returns a vector of the distances
 }
-tester <- data.frame(test1 = c(0,1,2), test2 = c(3,4,5), test3 = c(6,7,8))
-tester2 <- c(1,2,3)
-d <- calculateDistances(tester2, tester)
-a <- c(7, 3, 4)
-index = seq_along(a)
-o <- order(a, decreasing = FALSE)
-test <- cbind(a[o],index[o])
-test
-a[index]
-df <- aggregate(.~svi,data = prostate_clean, FUN = sum)
-df[order(df$age),]
+#tester <- data.frame(test1 = c(0,1,2), test2 = c(3,4,5), test3 = #c(6,7,8))
+#tester2 <- c(1,2,3)
+#d <- calculateDistances(tester2, tester)
+#a <- c(7, 3, 4)
+#index = seq_along(a)
+#o <- order(a, decreasing = FALSE)
+#test <- cbind(a[o],index[o])
+#test
+#a[index]
+#df <- aggregate(.~svi,data = prostate_clean, FUN = sum)
+#df[order(df$age),]
 ```
 
-# Main Goal: kNN
 
 ```{r}
 # Your function will have the following inputs similar to what you would find with the
@@ -385,12 +386,56 @@ library(class)
 x <- factor(c(1,1,0,0))
 
 mykNN <- function(train, test, y_train, y_test, k = 3, weighted = TRUE){
+  y_hat <- c()
   
   # Your code goes here
   # Do kNN instead of weighted
   if (weighted == FALSE){
-    dists <- calculateDistances(y_train, train)
-    dists <- sort(dists)[1:k]
+    
+    # Classification
+    if(is.factor(y_test)){
+      for (i in 1:dim(test)[1]){
+        dists <- calculateDistances(test[i,], train)
+        o <- order(dists, decreasing = FALSE)
+        index <- seq_along(dists)
+        # Grab k closest distances and indexes
+        dists_k <- cbind(dists[o],index[o])[1:k,]
+        dist_k_idx <- dists_k[,2]
+        find_lab <- data.frame(Label = y_train[dist_k_idx], dist = dists_k[,1])
+        find_lab <- find_lab[order(find_lab$dist, decreasing = TRUE),]
+        label <- find_lab[1,1]
+        y_hat <- append(y_hat, label)
+      }
+      tb <- table(y_hat, y_test)
+      accuracy <- sum(diag(tb)/sum(rowSums(tb)))
+      error_rate <- 1 - accuracy
+      conf <- confusionMatrix(data = y_hat, reference = y_test)
+      ls <- list('yhat' = y_hat, 'accuracy' = accuracy, 'error_rate' = error_rate, 'confusion_matrix' = conf, 'k' = k)
+    
+      return (ls)
+      
+    }
+    # Regression
+    else {
+      for (i in 1:dim(test)[1]){
+        dists <- calculateDistances(test[i,], train)
+        index <- seq_along(dists)
+        o <- order(dists, decreasing = FALSE)
+        # Grab k closest distances and indexes
+        dists_k <- cbind(dists[o],index[o])[1:k,]
+
+        fitted_value = 0
+        for (x in seq_along(k)){
+          fitted_value <- fitted_value + y_train[index[x]]
+        }
+        y_hat <- append(y_hat, (1/k)*fitted_value)
+      }
+      res_vec <- y_test - unlist(y_hat)
+      SSE <- sum((y_test-unlist(y_hat))^2)
+      ls <- list("yhat" = y_hat, "residual_vector" = res_vec, "SSE" = SSE, "k" = k)
+      return (ls)
+    }
+    
     
   }
     
@@ -404,24 +449,24 @@ mykNN <- function(train, test, y_train, y_test, k = 3, weighted = TRUE){
     #  * The value of k used
   else if( is.factor(y_test)){
       # Go through each row (entry) of test 
-    for (i in dim(test)[1]){
+    for (i in 1:dim(test)[1]){
       # Get distances of test row with all training rows
       dists <- calculateDistances(test[i,], train)
       index <- seq_along(dists)
       o <- order(dists, decreasing = FALSE)
       # Grab k closest distances and indexes
       dists_k <- cbind(dists[o],index[o])[1:k,]
+      weights <- 1/dists_k[,1]
+      dist_k_idx <- dists_k[,2]
 
-      weights <- 1/dists[,1]
-      
-      weight_sum <- data.frame(Label = y_train[index], weight = weights)
+      weight_sum <- data.frame(Label = y_train[dist_k_idx], weight = weights)
       weight_sum <- aggregate(.~Label, data = weight_sum, FUN = sum)
-      weight_sum <- weight_sum[order(weight_sum$weight, decreasing = TRUE)]
+      weight_sum <- weight_sum[order(weight_sum$weight, decreasing = TRUE),]
       label <- weight_sum[1,1]
       y_hat <- append(y_hat, label)
     }
     tb <- table(y_hat, y_test)
-    accuracy <- sum(diag(tb)/sum(rowSums(x))) * 100
+    accuracy <- sum(diag(tb)/sum(rowSums(tb)))
     error_rate <- 1 - accuracy
     conf <- confusionMatrix(data = y_hat, reference = y_test)
     
@@ -438,14 +483,13 @@ mykNN <- function(train, test, y_train, y_test, k = 3, weighted = TRUE){
   #  * The value of k used
   else {
     # Go through each row (entry) of test 
-    for (i in dim(test)[1]){
+    for (i in 1:dim(test)[1]){
       # Get distances of test row with all training rows
       dists <- calculateDistances(test[i,], train)
       index <- seq_along(dists)
       o <- order(dists, decreasing = FALSE)
       # Grab k closest distances and indexes
       dists_k <- cbind(dists[o],index[o])[1:k,]
-
       weights <- 1/dists_k[,1]
       c <- weights/sum(weights)
       fitted_value = 0
@@ -462,4 +506,91 @@ mykNN <- function(train, test, y_train, y_test, k = 3, weighted = TRUE){
 }
 
 ```
+
+# Problem 3
+
+```{r}
+# Some pre-processing
+library(ISLR)
+# Remove the name of the car model and change the origin to categorical with actual name
+Auto_new <- Auto[, -9]
+# Lookup table
+newOrigin <- c("USA", "European", "Japanese")
+Auto_new$origin <- factor(newOrigin[Auto_new$origin], newOrigin)
+
+# Look at the first 6 observations to see the final version
+head(Auto_new)
+```
+
+## 1. Randomly split data into two data frames
+
+```{r}
+index <- sample(1:nrow(Auto_new), round(nrow(Auto_new) * 0.7))
+training_df <- Auto_new[index, ]
+testing_df <- Auto_new[-index, ]
+
+```
+
+```{r}
+# Store the training/testing data features
+train_features <- training_df[, 1:dim(training_df)[2] - 1]
+test_features <- testing_df[, 1:dim(training_df)[2] - 1]
+# Store the actual labels
+train_classes <- training_df$origin
+test_classes <- testing_df$origin
+```
+
+## Regular kNN
+
+## 2. Use training and testing data 
+
+```{r}
+reg_kNN2 <- mykNN(train_features, test_features, train_classes, test_classes, k = 2, weighted = FALSE)
+reg_kNN3 <- mykNN(train_features, test_features, train_classes, test_classes, k = 3, weighted = FALSE)
+reg_kNN4 <- mykNN(train_features, test_features, train_classes, test_classes, k = 4, weighted = FALSE)
+reg_kNN5 <- mykNN(train_features, test_features, train_classes, test_classes, k = 5, weighted = FALSE)
+reg_kNN6 <- mykNN(train_features, test_features, train_classes, test_classes, k = 6, weighted = FALSE)
+reg_kNN7 <- mykNN(train_features, test_features, train_classes, test_classes, k = 7, weighted = FALSE)
+reg_kNN8 <- mykNN(train_features, test_features, train_classes, test_classes, k = 8, weighted = FALSE)
+reg_kNN9 <- mykNN(train_features, test_features, train_classes, test_classes, k = 9, weighted = FALSE)
+reg_kNN10 <- mykNN(train_features, test_features, train_classes, test_classes, k = 10, weighted = FALSE)
+```
+
+```{r}
+print(reg_kNN3$accuracy)
+print(reg_kNN5$accuracy)
+print(reg_kNN7$accuracy)
+print(reg_kNN10$accuracy)
+```
+## 3. Make table of accuracy
+
+```{r}
+tab_vals <- c(2, reg_kNN2$accuracy ,3,reg_kNN3$accuracy, 4, reg_kNN4$accuracy, 5, reg_kNN5$accuracy, 6, reg_kNN6$accuracy, 7, reg_kNN7$accuracy, 8, reg_kNN8$accuracy, 9, reg_kNN9$accuracy, 10, reg_kNN10$accuracy)
+table <- matrix(tab_vals, ncol = 2, byrow = TRUE)
+colnames(table) <- c('k', 'Accuracy')
+table <- as.table(table)
+knitr::kable(table, col.names = c("k", "Accuracy"))
+
+```
+
+## 4. Make a plot of the accuracy vs. k
+
+```{r}
+k <- c(2, 3, 4, 5, 6, 7, 8, 9, 10)
+accuracy <- c(reg_kNN2$accuracy, reg_kNN3$accuracy, reg_kNN4$accuracy ,reg_kNN5$accuracy, reg_kNN6$accuracy,reg_kNN7$accuracy, reg_kNN8$accuracy ,reg_kNN9$accuracy,reg_kNN10$accuracy)
+#df <- data.frame(table)
+plot(k, accuracy, main = "Accuracy vs. K", pch = 16)
+```
+
+It looks like k = 3 is the best number of neighbors. 
+
+## 5. Final confusion matrix of k = 3
+
+```{r}
+reg_kNN3$confusion_matrix
+```
+With k = 3, the k nearest neigbors is 66.95% accurate.
+
+# dnkNN
+
 
