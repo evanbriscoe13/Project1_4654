@@ -383,8 +383,6 @@ calculateDistances <- function(newData, training_features) {
 #  otherwise it should do the default knn method.
 library(class)
 
-x <- factor(c(1,1,0,0))
-
 mykNN <- function(train, test, y_train, y_test, k = 3, weighted = TRUE){
   y_hat <- c()
   
@@ -424,7 +422,7 @@ mykNN <- function(train, test, y_train, y_test, k = 3, weighted = TRUE){
         # Grab k closest distances and indexes
         dists_k <- cbind(dists[o],index[o])[1:k,]
 
-        fitted_value = 0
+        fitted_value <- 0
         for (x in seq_along(k)){
           fitted_value <- fitted_value + y_train[index[x]]
         }
@@ -490,9 +488,14 @@ mykNN <- function(train, test, y_train, y_test, k = 3, weighted = TRUE){
       o <- order(dists, decreasing = FALSE)
       # Grab k closest distances and indexes
       dists_k <- cbind(dists[o],index[o])[1:k,]
-      weights <- 1/dists_k[,1]
+      if (k == 1){
+        weights <- 1/dists_k[1]
+      }
+      else{
+        weights <- 1/dists_k[, 1]
+      }
       c <- weights/sum(weights)
-      fitted_value = 0
+      fitted_value <- 0
       for (x in seq_along(k)){
         fitted_value <- fitted_value + (c[x]*y_train[index[x]])
       }
@@ -589,8 +592,143 @@ It looks like k = 3 is the best number of neighbors.
 ```{r}
 reg_kNN3$confusion_matrix
 ```
-With k = 3, the k nearest neigbors is 66.95% accurate.
+With k = 3, the k nearest neighbors is 66.95% accurate.
+
+## Graphing 
+
+```{r}
+ggplot(train_features, aes(x = weight, y = mpg, color = train_classes)) + geom_point(alpha = 0.5) + ggtitle("MPG vs. Weight k = 5") + geom_point(data = test_features, aes(weight, mpg, color = reg_kNN5$yhat), shape = 18)
+```
+
+
+```{r}
+ggplot(train_features, aes(x = weight, y = mpg, color = train_classes)) + geom_point(alpha = 0.5) + ggtitle("MPG vs. Weight k = 10") + geom_point(data = test_features, aes(weight, mpg, color = reg_kNN10$yhat), shape = 18)
+```
 
 # dnkNN
 
+## 2. 
+
+```{r}
+wt_kNN2 <- mykNN(train_features, test_features, train_classes, test_classes, k = 2, weighted = TRUE)
+wt_kNN3 <- mykNN(train_features, test_features, train_classes, test_classes, k = 3, weighted = TRUE)
+wt_kNN4 <- mykNN(train_features, test_features, train_classes, test_classes, k = 4, weighted = TRUE)
+wt_kNN5 <- mykNN(train_features, test_features, train_classes, test_classes, k = 5, weighted = TRUE)
+wt_kNN6 <- mykNN(train_features, test_features, train_classes, test_classes, k = 6, weighted = TRUE)
+wt_kNN7 <- mykNN(train_features, test_features, train_classes, test_classes, k = 7, weighted = TRUE)
+wt_kNN8 <- mykNN(train_features, test_features, train_classes, test_classes, k = 8, weighted = TRUE)
+wt_kNN9 <- mykNN(train_features, test_features, train_classes, test_classes, k = 9, weighted = TRUE)
+wt_kNN10 <- mykNN(train_features, test_features, train_classes, test_classes, k = 10, weighted = TRUE)
+```
+
+```{r}
+print(wt_kNN3$accuracy)
+print(wt_kNN5$accuracy)
+print(wt_kNN7$accuracy)
+print(wt_kNN10$accuracy)
+```
+## 3. Make table of accuracy
+
+```{r}
+tab_vals <- c(2, wt_kNN2$accuracy ,3,wt_kNN3$accuracy, 4, wt_kNN4$accuracy, 5, wt_kNN5$accuracy, 6, wt_kNN6$accuracy, 7, wt_kNN7$accuracy, 8, wt_kNN8$accuracy, 9, wt_kNN9$accuracy, 10, wt_kNN10$accuracy)
+table <- matrix(tab_vals, ncol = 2, byrow = TRUE)
+colnames(table) <- c('k', 'Accuracy')
+table <- as.table(table)
+knitr::kable(table, col.names = c("k", "Accuracy"))
+
+```
+
+## 4. Plot accuracy vs. K
+
+```{r}
+k <- c(2, 3, 4, 5, 6, 7, 8, 9, 10)
+accuracy <- c(wt_kNN2$accuracy, wt_kNN3$accuracy, wt_kNN4$accuracy ,wt_kNN5$accuracy, wt_kNN6$accuracy,wt_kNN7$accuracy, wt_kNN8$accuracy ,wt_kNN9$accuracy,wt_kNN10$accuracy)
+#df <- data.frame(table)
+plot(k, accuracy, main = "Accuracy vs. K", pch = 16)
+```
+
+Using 10 of the neighbors looks the best. 
+
+## 5. Display confusion matrix of k = 10
+
+```{r}
+wt_kNN10$confusion_matrix
+```
+Using k = 10, there is an accuracy of 72.88%
+
+Comparing the weighted and regular knn with classification, as you increase the amount of neighbors for the weighted knn, there is an increase of accuracy. As you increase the amount of neighbors for the regular knn, there is a decrease of accuracy. 
+
+## Graphing data
+
+```{r}
+ggplot(train_features, aes(x = weight, y = mpg, color = train_classes)) + geom_point(alpha = 0.5) + ggtitle("MPG vs. Weight k = 5") + geom_point(data = test_features, aes(weight, mpg, color = wt_kNN5$yhat), shape = 18)
+```
+
+```{r}
+ggplot(train_features, aes(x = weight, y = mpg, color = train_classes)) + geom_point(alpha = 0.5) + ggtitle("MPG vs. Weight k = 10") + geom_point(data = test_features, aes(weight, mpg, color = wt_kNN10$yhat), shape = 18)
+```
+
+# Problem 4
+
+```{r}
+index <- sample(1:nrow(ozone), 70)
+training_df <- ozone[index, ]
+testing_df <- ozone[-index, ]
+```
+
+```{r}
+# Store the training/testing data features
+train_features <- training_df[, 2:dim(training_df)[2]]
+test_features <- testing_df[, 2:dim(training_df)[2]]
+# Store the actual labels
+train_classes <- training_df$ozone
+test_classes <- testing_df$ozone
+```
+
+## Part a
+
+
+```{r}
+k <- c(1,3,5,10,20)
+
+tab_vals <- c()
+
+for (i in k){
+  dwkNN <- mykNN(train_features, test_features, train_classes, test_classes, k = i, weighted = TRUE)
+  
+  print(ggplot(training_df, aes(temperature, ozone)) 
+        + geom_point(color = "black") 
+        + geom_point(data = testing_df, aes(temperature, ozone), color = "blue") 
+        + geom_line(data = testing_df, aes(temperature, dwkNN$yhat, color = "red"))
+        + geom_point(data = testing_df, aes(temperature, dwkNN$yhat, color = "red")) + ggtitle(i))
+  
+  tab_vals <- append(tab_vals, i)
+  tab_vals <- append(tab_vals, dwkNN$SSE)
+}
+```
+
+
+```{r}
+table <- matrix(tab_vals, ncol = 2, byrow = TRUE)
+colnames(table) <- c('k', 'SSE')
+table <- as.table(table)
+knitr::kable(table)
+```
+The lease error occurs at k = 3. In addition, the regression lines only look accurate at the begining 
+
+```{r}
+dists <- calculateDistances(test_features[1,], train_features)
+index <- seq_along(dists)
+o <- order(dists, decreasing = FALSE)
+# Grab k closest distances and indexes
+dists_k <- cbind(dists[o],index[o])[1:5,]
+weights <- 1/dists_k[, 1]
+
+c <- weights/sum(weights)
+fitted_value <- 0
+for (x in seq_along(k)){
+  fitted_value <- fitted_value + (c[x]*train_classes[index[x]])
+}
+y_hat <- append(y_hat, fitted_value)
+```
 
